@@ -10,13 +10,13 @@ app.use(cors());
 let db;
 
 (async () => {
-    // Open Database Connection
+    // open Database Connection
     db = await open({
         filename: './database.sqlite',
         driver: sqlite3.Database
     });
 
-    // Create Table and Seed User automatically
+    // create table and seed user automatically
     await db.exec(`
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +32,7 @@ let db;
     }
 })();
 
-// Login Route
+// login route
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     try {
