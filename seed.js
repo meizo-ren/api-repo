@@ -2,14 +2,14 @@ const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('./database.sqlite');
 
 db.serialize(() => {
-  // 1. Create the users table if it doesn't exist
+  // create the users table if it doesn't exist
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT UNIQUE,
     password TEXT
   )`);
 
-  // 2. Insert a test user
+  // insert a test user
   const email = 'iptrack@sample.com';
   const password = 'passwordip123'; // In a real app, you would hash this!
 

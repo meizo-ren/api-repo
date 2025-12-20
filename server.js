@@ -10,6 +10,7 @@ app.use(cors());
 // Replace 'YOUR_MONGODB_URI' with the string from Atlas or use process.env.MONGO_URI
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://Meizo:password12333@cluster0.lwkpzr7.mongodb.net/?appName=Cluster0';
 
+
 mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ Connected to MongoDB Atlas'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
@@ -73,3 +74,4 @@ app.post('/api/logs', async (req, res) => {
 // 5. LISTEN
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`🚀 API running on port ${PORT}`));
+
