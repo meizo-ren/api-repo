@@ -1,50 +1,75 @@
 const express = require('express');
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
+const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-let db;
+// 1. MONGODB CONNECTION
+// Replace 'YOUR_MONGODB_URI' with the string from Atlas or use process.env.MONGO_URI
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://Meizo:password12333@cluster0.lwkpzr7.mongodb.net/?appName=Cluster0';
 
-(async () => {
-    // Open Database Connection
-    db = await open({
-        filename: './database.sqlite',
-        driver: sqlite3.Database
-    });
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ Connected to MongoDB Atlas'))
+  .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-    // Create Table and Seed User automatically
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE,
-            password TEXT
-        )
-    `);
-
-    const testUser = await db.get('SELECT * FROM users WHERE email = ?', ['iptrack@sample.com']);
-    if (!testUser) {
-        await db.run('INSERT INTO users (email, password) VALUES (?, ?)', ['iptrack@sample.com', 'passwordip123']);
-        console.log("✅ User Seeder: Test user created!");
-    }
-})();
-
-// Login Route
-app.post('/api/login', async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const user = await db.get('SELECT * FROM users WHERE email = ? AND password = ?', [email, password]);
-        if (user) {
-            res.json({ success: true, user: { email: user.email } });
-        } else {
-            res.status(401).json({ success: false, message: "Invalid credentials" });
-        }
-    } catch (error) {
-        res.status(500).json({ error: "Database error" });
-    }
+// 2. DEFINE SCHEMAS (Tables)
+const userSchema = new mongoose.Schema({
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true }
 });
 
-app.listen(8000, () => console.log('🚀 API running on http://localhost:8000'));
+const logSchema = new mongoose.Schema({
+  ip: String,
+  location: String,
+  isp: String,
+  timestamp: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+const Log = mongoose.model('Log', logSchema);
+
+// 3. AUTO-SEEDER (Runs on startup)
+const seedUser = async () => {
+  try {
+    const testUser = await User.findOne({ email: 'iptrack@sample.com' });
+    if (!testUser) {
+      await User.create({ email: 'iptrack@sample.com', password: 'passwordip123' });
+      console.log("✅ User Seeder: Test user created!");
+    }
+  } catch (err) {
+    console.error("Seeder error:", err);
+  }
+};
+seedUser();
+
+// 4. ROUTES
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email, password });
+    if (user) {
+      res.json({ success: true, user: { email: user.email } });
+    } else {
+      res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// Route to save logs (The feature we added earlier)
+app.post('/api/logs', async (req, res) => {
+  try {
+    const newLog = new Log(req.body);
+    await newLog.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to save log" });
+  }
+});
+
+// 5. LISTEN
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => console.log(`🚀 API running on port ${PORT}`));
